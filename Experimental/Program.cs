@@ -2,32 +2,38 @@
 using System.Collections.Generic;
 using System.Threading;
 using SnmpSharpNet;
+using System.Diagnostics;
 
 namespace Experimental
-{
-    static class StringExtension
+{  
+    class Program
     {
-        public static void Log( this string txt)
+        static EventLog ELog;
+
+        static void WriteLogSimple( string txt)
         {
             Console.WriteLine($"[{DateTime.Now}] {txt}");
+            ELog.WriteEntry(txt);
         }
 
-        public static void Log(this string txt, ConsoleColor col)
-        {
-            var c0 = Console.ForegroundColor;
-            Console.ForegroundColor = col;
-            Log(txt);
-            Console.ForegroundColor = c0;
-        }
-    }
-    
-    class Program
-    {        
-        
         static void HandleV1Trap( byte[] raw)
         {
             var output = new System.Text.StringBuilder();
             var pkt = new SnmpV1TrapPacket();
+            pkt.decode(raw, raw.Length);
+
+            output.AppendLine($"SNMP v1");
+            output.AppendLine($"Generic: {pkt.Pdu.Generic} - Specific: {pkt.Pdu.Specific}");
+            output.AppendLine($"Agent address: {pkt.Pdu.AgentAddress}");
+            output.AppendLine($"Message count: {pkt.Pdu.VbList.Count}");
+            output.AppendLine("---");
+            foreach( var v in pkt.Pdu.VbList)
+            {
+                output.AppendLine($"{v.Oid} - {SnmpConstants.GetTypeName(v.Value.Type)} : {v.Value.ToString()}");
+            }
+
+            string result = output.ToString();
+            WriteLogSimple(result);
         }
 
         static void HandleV2Trap( byte[] raw)
@@ -40,13 +46,17 @@ namespace Experimental
             }
 
             var output = new System.Text.StringBuilder();
+            output.AppendLine("SNMP v2");
             output.AppendLine($"Community: {pkt.Community}");
             output.AppendLine($"Message count: {pkt.Pdu.VbList.Count}");
             output.AppendLine("---");
             foreach( var v in pkt.Pdu.VbList)
             {
-                output.AppendLine($"{v.Oid} - {SnmpConstants.GetTypeName(v.Value.Type)} : {v.Value}");
+                output.AppendLine($"{v.Oid} - {SnmpConstants.GetTypeName(v.Value.Type)} : {v.Value.ToString()}");
             }
+
+            string result = output.ToString();
+            WriteLogSimple(result);
         }
 
         static void HandleTrap( byte[] raw)
@@ -72,12 +82,48 @@ namespace Experimental
             }
             catch( Exception e)
             {
-                e.ToString().Log(ConsoleColor.DarkRed);
+                WriteLogSimple(e.ToString());
             }
         }
         
+        static void InitEventLog()
+        {
+            string logname = "FFTrapLog";
+
+            if( !EventLog.Exists(logname))
+            {
+                EventLog.CreateEventSource(logname, logname);
+
+                ELog = new EventLog();
+                ELog.Source = logname;
+                ELog.Log = logname;
+
+                ELog.WriteEntry(
+                    "Eventlog initialized",
+                    EventLogEntryType.Information,
+                    0
+                );
+            }
+            else
+            {
+                ELog = new EventLog();
+                ELog.Source = logname;
+                ELog.Log = logname;
+
+                ELog.WriteEntry(
+                    "FFTraps started",
+                    EventLogEntryType.Information,
+                    1
+                );
+            }
+
+        }
+
+
+
         static void Main(string[] args)
         {
+            InitEventLog();
             var socket = new System.Net.Sockets.UdpClient(162);
 
             while (true)
@@ -86,19 +132,20 @@ namespace Experimental
                 {
                     var ep = new System.Net.IPEndPoint(System.Net.IPAddress.Any, 162);
                     var buffer = socket.Receive(ref ep);
+
                     if( buffer.Length > 0)
                     {
-                        new Thread(() => HandleTrap(buffer));
+                        new Thread(() => HandleTrap(buffer)).Start();
                     }
                     else
                     {
-                        "Zero length Trap received".Log(ConsoleColor.Gray);
+                        WriteLogSimple("Zero length trap receieved");
                     }
 
                 }
                 catch( Exception e )
                 {
-                    e.ToString().Log(ConsoleColor.Red);
+                    WriteLogSimple(e.ToString());
                 }
 
             }
