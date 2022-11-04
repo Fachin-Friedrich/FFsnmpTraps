@@ -128,9 +128,15 @@ namespace Experimental
             Console.WriteLine(MainboardInfo.SystemName);
         }
 
+        static void TestParsing()
+        {
+            var x = MIBParserLite.Parse(@"C:\Daten\cs2\FFsnmpTraps\mib\ASUS_PETTrap.mib");
+            Console.WriteLine(x.Count);
+        }
+
         static void Main(string[] args)
         {
-            SelfIdentify();
+            TestParsing();
             return;
             InitEventLog();
             var socket = new System.Net.Sockets.UdpClient(162);
