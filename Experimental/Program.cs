@@ -119,10 +119,19 @@ namespace Experimental
 
         }
 
-
+        static void SelfIdentify()
+        {
+            Console.WriteLine(MainboardInfo.Model);
+            Console.WriteLine(MainboardInfo.Manufacturer);
+            Console.WriteLine(MainboardInfo.Product);
+            Console.WriteLine(MainboardInfo.SerialNumber);
+            Console.WriteLine(MainboardInfo.SystemName);
+        }
 
         static void Main(string[] args)
         {
+            SelfIdentify();
+            return;
             InitEventLog();
             var socket = new System.Net.Sockets.UdpClient(162);
 

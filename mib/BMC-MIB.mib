@@ -1,0 +1,656 @@
+--/******************************************************************************
+--*
+--*                   INTEL CORPORATION PROPRIETARY INFORMATION
+--*       This software is supplied under the terms of a license agreement or
+--*       nondisclosure agreement with Intel Corporation and may not be copied
+--*       or disclosed except in accordance with the terms of that agreement.
+--*            Copyright (c) 2001 Intel Corporation. All Rights Reserved.
+--*
+--*
+--******************************************************************************/
+
+--/******************************************************************************
+-- *
+-- *    Revision History:
+-- *
+-- *    TMM - 02/27/16 Add Variable Bindings for Traps
+-- *    GAE - 01/24/11 Timer Expired watchdog 2, Power supply presence,
+-- *                   Power unit, SMI timeout, Drive slot.
+-- *    GAE - 03/24/09 Changed "Thurley" to "Common."
+-- *    edy - 10/13/08 removed unneeded variables
+-- *
+-- *****************************************************************************/
+
+INTEL-COMMON-BMC-MIB DEFINITIONS ::= BEGIN
+
+-- Title : BMC 1.2 MIB file.
+
+IMPORTS
+    enterprises
+        FROM RFC1155-SMI
+    TRAP-TYPE
+        FROM RFC-1215;
+
+-- textual conventions
+-- MODULE IDENTIFICATION
+--
+-- COMMENT: module-identity, last-updated, etc are MIB keywords, but are v2
+--  BMC Alerting MODULE-IDENTITY
+--  LAST-UPDATED "February 27, 2016"
+--  ORGANIZATION "Intel Corporation"
+--  CONTACT-INFO
+--   " Server Management Firmware Development,
+--     Intel Corporation, JF5
+--     Hillsboro, OR 97124"
+--  DESCRIPTION
+--  "This is the MIB file for the Embedded Server Management SNMP Agent."
+
+wired-for-management    OBJECT IDENTIFIER ::= {enterprises 3183}
+pet         OBJECT IDENTIFIER ::= {wired-for-management 1}
+--**************************************************************************
+--*      Notifications (using SNMPv1 TRAP-TYPE constructs for maximum
+--*         compatibility with deployed SNMP managers).
+--**************************************************************************
+
+pet-events      OBJECT IDENTIFIER ::= {pet 1}
+
+-- Variable Bindings sent with each trap
+
+petEventText OBJECT-TYPE
+    SYNTAX  DisplayString
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+        "Text showing what event generated the trap. It is the IPMI SEL record
+        converted into a human-readable text string."
+    ::= {pet-events 1}
+
+petSeverity OBJECT-TYPE
+    SYNTAX  INTEGER {
+                unspecified(0),
+                Monitor(1),
+                Information(2),
+                OK(4),
+                Non-critical(8),
+                Critical(16),
+                Non-recoverable(32)
+            }
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+        "Event Severity taken from the IPMI PEF Event Table Filter entry."
+    ::= {pet-events 2}
+
+petSysGUID  OBJECT-TYPE
+    SYNTAX  DisplayString (SIZE (0..15))
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+        "System GUID as returned by the IPMI Get System GUID command."
+    ::= {pet-events 3}
+
+petSerialNum OBJECT-TYPE
+    SYNTAX  DisplayString
+    ACCESS  read-only
+    STATUS  mandatory
+    DESCRIPTION
+        "Chassis Serial Number read from the FRUs, as returned by the IPMI OEM Get Chassis Identification
+        command."
+    ::= {pet-events 4}
+
+petCustom1 OBJECT-TYPE
+    SYNTAX  DisplayString
+    ACCESS  read-only
+    STATUS  optional
+    DESCRIPTION
+        "Optional Custom field set with the IPMI Set LAN Configuration Parameters command, param=0xc8, selector=0."
+    ::= {pet-events 5}
+
+petCustom2 OBJECT-TYPE
+    SYNTAX  DisplayString
+    ACCESS  read-only
+    STATUS  optional
+    DESCRIPTION
+        "Optional Custom field set with the IPMI Set LAN Configuration Parameters command, param=0xc8, selector=1."
+    ::= {pet-events 6}
+
+--**************************************************************************
+-- Temperature Sensor Events (3 of them)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (010107h == 65799)
+tempUpperNonCriticalGoingHigh TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Temperature sensor crossed upper non-critical threshold, going high."
+    ::= 65799
+
+-- Event Sensor Type, Event Type, Event Offset (010109h == 65801)
+tempUpperCriticalGoingHigh TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Temperature sensor crossed upper critical threshold, going high."
+    ::= 65801
+
+-- Event Sensor Type, Event Type, Event Offset (010102h == 65794)
+tempUpperCriticalGoingHigh TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Temperature sensor crossed lower critical threshold, going low."
+    ::= 65794
+
+-- Event Sensor Type, Event Type, Event Offset (010100h == 65792)
+tempUpperCriticalGoingHigh TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Temperature sensor crossed lower non-critical threshold, going low."
+    ::= 65792
+
+
+--**************************************************************************
+-- Voltage Sensor Events (7 of them)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (020100h == 131328)
+voltageLowerNonCriticalGoingLow TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Voltage sensor crossed lower non-critical threshold, going low."
+    ::= 131328
+
+-- Event Sensor Type, Event Type, Event Offset (020102h == 131330)
+voltageLowerCriticalGoingLow TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Voltage sensor crossed lower critical threshold, going low."
+    ::= 131330
+
+-- Event Sensor Type, Event Type, Event Offset (020104h == 131332)
+voltageLowerNonRecoverableGoingLow TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Voltage sensor crossed lower non-recoverable threshold, going low."
+    ::= 131332
+
+-- Event Sensor Type, Event Type, Event Offset (020107h == 131335)
+voltageUpperNonCriticalGoingHigh TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Voltage sensor crossed upper non-critical threshold, going high."
+    ::= 131335
+
+-- Event Sensor Type, Event Type, Event Offset (020109h == 131337)
+voltageUpperCriticalGoingHigh TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Voltage sensor crossed upper critical threshold, going high."
+    ::= 131337
+
+-- Event Sensor Type, Event Type, Event Offset (02010Bh == 131339)
+voltageUpperNonRecoverableGoingHigh TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Voltage sensor crossed upper non-recoverable threshold, going high."
+    ::= 131339
+
+-- Event Sensor Type, Event Type, Event Offset (020301h == 131841)
+voltageFault TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "A Voltage Fault assertion event."
+    ::= 131841
+
+--**************************************************************************
+-- Fan Failure Events (2 of them)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (040100h == 262400)
+fanFailureLowerNonCriticalGoingLow TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Fan sensor crossed lower non-critical threshold, going low."
+    ::= 262400
+
+-- Event Sensor Type, Event Type, Event Offset (040102h == 262402)
+fanFailureLowerCriticalGoingLow TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Fan sensor crossed lower critical threshold, going low."
+    ::= 262402
+
+--**************************************************************************
+-- Chassis Intrusion Event
+--**************************************************************************
+
+-- Event Sensor Type 05h, Event Type 6fh, Event Offset 00h (056f00h == 356096)
+chassisIntrusionEvent TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "A Chassis Intrusion assertion event."
+
+    ::= 356096
+
+-- Event Sensor Type 05h, Event Type 6fh, Event Offset 04h (056f04h == 356100)
+chassisIntrusionEventLANLeashLost TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "A Chassis Intrusion LAN leash lost assertion event."
+    ::= 356100
+
+--**************************************************************************
+-- Power Supply Fault Events (5 of them)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (086F00h == 552704)
+powerSupplyPresence TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power supply presence event."
+    ::= 552704
+
+-- Event Sensor Type, Event Type, Event Offset (086F01h == 552705)
+powerSupplyFailure TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power supply failure event."
+    ::= 552705
+
+-- Event Sensor Type, Event Type, Event Offset (086F02h == 552706)
+powerSupplyPredictiveFailure TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power supply predictive failure asserted event."
+    ::= 552706
+
+-- Event Sensor Type, Event Type, Event Offset (086F03h == 552707)
+powerSupplyACLost TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power supply A/C lost event."
+    ::= 552707
+
+-- Event Sensor Type, Event Type, Event Offset (086F06h == 552710)
+powerSupplyConfigurationError TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power supply configuration error event."
+    ::= 552710
+
+--**************************************************************************
+-- Uncorrectable ECC Error Event
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (0C6F01h == 814849)
+uncorrectableECCError TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Uncorrectable ECC error event."
+    ::= 814849
+
+--**************************************************************************
+-- POST Error Event
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (0F6F00h == 1011456)
+postError TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power On Self Test (POST) error event."
+    ::= 1011456
+
+--**************************************************************************
+-- Processor Failure Events (4 of them)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (076F00h == 487168)
+procCaterr TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "CATERR Event Detected."
+    ::= 487168
+
+-- Event Sensor Type, Event Type, Event Offset (076F01h == 487169)
+thermalTripError TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Thermal Trip error event."
+    ::= 487169
+
+-- Event Sensor Type, Event Type, Event Offset (076F05h == 487173)
+ConfigurationError TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Configuration Error."
+    ::= 487173
+
+-- Event Sensor Type, Event Type, Event Offset (076F07h == 487175)
+cpuPresence TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Processor Presence"
+
+    ::= 487175
+
+-- Event Sensor Type, Event Type, Event Offset (070301h == 459521)
+procERR2 TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "ERR2 Event Detected."
+    ::= 459521
+
+--**************************************************************************
+-- Critical Interrupt Events (1 of them)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (136F00h == 1273600)
+fatalNMIError TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Front Panel NMI Assertion event."
+    ::= 1273600
+
+--**************************************************************************
+-- Watchdog 2 Events (5 of them)
+--**************************************************************************
+-- Event Sensor Type, Event Type, Event Offset (236F00h == 2322176)
+timerExpired TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Timer expired event."
+    ::= 2322176
+
+-- Event Sensor Type, Event Type, Event Offset (236F01h == 2322177)
+hardReset TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Hard reset event."
+    ::= 2322177
+
+-- Event Sensor Type, Event Type, Event Offset (236F02h == 2322178)
+powerDown TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power down event."
+    ::= 2322178
+
+-- Event Sensor Type, Event Type, Event Offset (236F03h == 2322179)
+powerReset TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Reset event"
+    ::= 2322179
+
+
+-- Event Sensor Type, Event Type, Event Offset (236F08h == 2322184)
+timerInterrupt TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Timer Interrupt event."
+    ::= 2322184
+
+--**************************************************************************
+-- System Event
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (126F01h == 1208065)
+oemSystemBootEvent TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "OEM System Boot event."
+    ::= 1208065
+
+-- Event Sensor Type, Event Type, Event Offset (106F02h == 1076994)
+selLogAreaReset TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Log area reset / cleared"
+    ::=1076994
+
+
+--**************************************************************************
+-- SMI Timeout
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (03F301h == 258817)
+smiTimeoutError TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "SMI Timeout Assertion event."
+    ::= 258817
+
+--**************************************************************************
+-- Drive Slot (Bay) Offsets (4)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (0D6F00h == 880384)
+drivePresence TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Drive Presence event."
+    ::= 880384
+
+-- Event Sensor Type, Event Type, Event Offset (0D6F01h == 880385)
+driveFault TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Drive Fault event."
+    ::= 880385
+
+-- Event Sensor Type, Event Type, Event Offset (0D6F02h == 880386)
+drivePredictiveFailure TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Drive Predictive Failure event."
+    ::= 880386
+
+-- Event Sensor Type, Event Type, Event Offset (0D6F07h == 880391)
+driveRebuild TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Drive Rebuild event."
+    ::= 880391
+
+--**************************************************************************
+-- Power Unit Offsets (5)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (096F00h == 618240)
+powerOffPowerUnit TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Power Off event."
+    ::= 618240
+
+-- Event Sensor Type, Event Type, Event Offset (096F02h == 618242)
+powerOffPowerUnit240VA TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit 240VA Power Down event."
+    ::= 618242
+
+-- Event Sensor Type, Event Type, Event Offset (096F04h == 618244)
+acLostPowerUnit TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit AC Lost event."
+    ::= 618244
+
+-- Event Sensor Type, Event Type, Event Offset (096F05h == 618245)
+softPowerControlPowerUnit TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Soft Power Control Failure event."
+    ::= 618245
+
+-- Event Sensor Type, Event Type, Event Offset (096F06h == 618246)
+powerUnitFailure TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Failure event."
+    ::= 618246
+
+--**************************************************************************
+-- Power Unit Redundancy Offsets (8)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (090B00h == 592640)
+powerRedunFull TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Redundancy Fully Redundant event."
+    ::= 592640
+
+-- Event Sensor Type, Event Type, Event Offset (090B01h == 592641)
+powerRedunLost TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Redundancy Redundancy Lost event."
+    ::= 592641
+
+-- Event Sensor Type, Event Type, Event Offset (090B02h == 592642)
+powerRedunDegraded TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Redundancy Degraded event."
+    ::= 592642
+
+-- Event Sensor Type, Event Type, Event Offset (090B03h == 592643)
+powerRedunNon-redun TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Redundancy Non-redundant:Sufficient Resources from Redundant Redundancy has been lost but unit is functioning with minimum resources needed for ‘normal’ operation."
+    ::= 592643
+
+-- Event Sensor Type, Event Type, Event Offset (090B04h == 592644)
+powerRedunNon-redun TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Redundancy Redundancy Non-redundant:Sufficient Resources from Insufficient Resources Unit has regained minimum resources needed for ‘normal’ operation."
+    ::= 592644
+
+-- Event Sensor Type, Event Type, Event Offset (090B05h == 592645)
+powerRedunNon-redun TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Redundancy Non-redundant:Insufficient Resources Unit is non-redundant and has insufficient resources to maintain normal operation."
+    ::= 592645
+
+-- Event Sensor Type, Event Type, Event Offset (090B06h == 592646)
+powerRedunDegraded TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Redundancy Degraded from Fully Redundant."
+    ::= 592646
+
+-- Event Sensor Type, Event Type, Event Offset (090B07h == 592647)
+powerRedunDegraded TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Unit Redundancy Degraded from Non-redundant."
+    ::= 592647
+
+--**************************************************************************
+-- Powr Supply Input Power Offsets (2)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (0B0107h == 721159)
+powerSupplyInputPower TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Supply Input Power Upper Non-critical,going high."
+    ::= 721159
+
+-- Event Sensor Type, Event Type, Event Offset (0B0109h == 721161)
+powerSupplyInputPower TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Supply Input Power Upper critical,going high."
+    ::= 721161
+
+--**************************************************************************
+-- Powr Supply Current Output Offsets (2)
+--**************************************************************************
+
+-- Event Sensor Type, Event Type, Event Offset (030107h == 196871)
+powerSupplyCurrOutUpperNonCriticalGoingHigh TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Supply Current Output Upper Non-critical,going high."
+    ::= 196871
+
+-- Event Sensor Type, Event Type, Event Offset (030109h == 196873)
+powerSupplyCurrOutUpperCriticalGoingHigh TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Power Supply Current Output Upper critical,going high."
+    ::= 196873
+
+--**************************************************************************
+-- BMC FW Health Offsets (1)
+--**************************************************************************
+-- Event Sensor Type, Event Type, Event Offset (286F04h == 2649860)
+BMCFWHealthSensorFailure TRAP-TYPE
+    ENTERPRISE  pet-events
+    VARIABLES { petEventText, petSeverity, petSysGUID, petSerialNum, petCustom1, petCustom2 }
+    DESCRIPTION
+        "Some of the sensors are known to be in error."
+    ::= 2649860
+
+END

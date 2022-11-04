@@ -1,0 +1,184 @@
+-- ASUS Server Mornitor MIB File                         --
+--                                                       --
+--            iso(1).org(3).dod(6).internet(1)           --
+--                           |                           --
+--                        private(4)                     --
+--                           |                           --
+--                       enterprise(1)                   --
+--                           |                           --
+--                      ASUSTek (2623)                   --
+--                           |                           --
+--                        Server (1)                     --
+--                           |                           --
+--                 -------------------------             --
+--                |                                      --
+--           Management(1)                               --
+--                |                                      --
+--         -----------------                             --
+--        |                |                             --
+--      BMC(1)                                    --
+--                                                       --
+--                                                       --
+-----------------------------------------------------------
+
+
+-- Define MIB Name 
+ASUSSERVERMGMT-MIB DEFINITIONS ::= BEGIN
+
+
+-- IMPORTS Statement 
+IMPORTS 
+    enterprises, IpAddress, Gauge, TimeTicks     
+        FROM RFC1155-SMI
+
+    MODULE-IDENTITY,OBJECT-IDENTITY,NOTIFICATION-TYPE,
+    OBJECT-TYPE,Unsigned32,Integer32,Counter32
+        FROM SNMPv2-SMI
+     
+    DisplayString, TruthValue
+        FROM SNMPv2-TC;
+
+-- MODULE-IDENTITY Statement
+
+
+
+
+-- NODE DEfinitions Statement
+
+    ASUSTeK OBJECT IDENTIFIER 
+        ::=  { enterprises 2623 }
+
+    Server OBJECT IDENTIFIER 
+        ::=  { ASUSTeK 1 }
+
+    management OBJECT IDENTIFIER 
+        ::=  { Server 1 }
+   
+    --====== BMC Node ========
+
+    bmc OBJECT IDENTIFIER 
+        ::=  { management 1 }
+
+    bmcBasicInfo OBJECT IDENTIFIER 
+	::=  { bmc 1 }
+
+    fwVersion OBJECT-TYPE
+	SYNTAX  DisplayString
+	ACCESS  read-only
+	STATUS  mandatory
+	DESCRIPTION "BMC version"
+	::= { bmcBasicInfo 1 }
+
+    buildDateTime OBJECT-TYPE
+	SYNTAX  DisplayString
+	ACCESS  read-only
+	STATUS  mandatory
+	DESCRIPTION "BMC firmware build date time"
+	::= { bmcBasicInfo 2 }
+
+
+
+
+     serverHealth OBJECT IDENTIFIER 
+	::=  { bmc 2 }
+
+
+     sensorCount OBJECT-TYPE
+	SYNTAX  DisplayString
+	ACCESS  read-only
+	STATUS  mandatory
+	DESCRIPTION "Sensor Count"
+	::= { serverHealth 1 }
+
+
+         -- Sensor Table
+
+              sensorTable OBJECT-TYPE
+                       SYNTAX  SEQUENCE OF sensorEntry
+                       ACCESS  not-accessible
+                       STATUS  mandatory
+                       ::= { serverHealth 2 }
+
+               sensorEntry OBJECT-TYPE
+                       SYNTAX  SensorEntry
+                       ACCESS  not-accessible
+                       STATUS  mandatory
+                       INDEX   { sensorNum }
+                       ::= { sensorTable 1 }
+
+               SensorEntry ::= SEQUENCE {
+
+                   sensorNum
+                       INTEGER,
+
+                   sensorName
+                       DisplayString,
+
+                   sensorType
+                       DisplayString,
+
+                   sensorValue
+                       DisplayString,
+
+                   sensorStatus
+                       DisplayString
+
+               }
+
+               sensorNum OBJECT-TYPE
+                       SYNTAX  INTEGER
+                       ACCESS  read-only
+                       STATUS  mandatory
+                       ::=  { sensorEntry 1 }
+
+               sensorName OBJECT-TYPE
+                       SYNTAX  DisplayString (SIZE (0..255))
+                       ACCESS  read-only
+                       STATUS  mandatory
+                       ::=  { sensorEntry 2 }
+
+               sensorType OBJECT-TYPE
+                       SYNTAX  DisplayString (SIZE (0..255))
+                       ACCESS  read-only
+                       STATUS  mandatory
+                       ::=  { sensorEntry 3 }
+
+               sensorValue OBJECT-TYPE
+                       SYNTAX  DisplayString (SIZE (0..255))
+                       ACCESS  read-only
+                       STATUS  mandatory
+                       ::= { sensorEntry 4 }
+
+               sensorStatus OBJECT-TYPE
+                       SYNTAX  DisplayString (SIZE (0..255))
+                       ACCESS  read-only
+                       STATUS  mandatory
+                       ::= { sensorEntry 5 }
+
+
+	       thresholdUpperCritical OBJECT-TYPE
+                       SYNTAX  INTEGER  
+                       ACCESS  read-only
+                       STATUS  mandatory
+                       ::= { sensorEntry 6 }
+
+	       thresholdUpperNonCritical OBJECT-TYPE
+                       SYNTAX  INTEGER  
+                       ACCESS  read-only
+                       STATUS  mandatory
+                       ::= { sensorEntry 7 }
+
+	       thresholdLowerNonCritical OBJECT-TYPE
+                       SYNTAX  INTEGER  
+                       ACCESS  read-only
+                       STATUS  mandatory
+                       ::= { sensorEntry 8 }
+	
+	       thresholdLowerCritical OBJECT-TYPE
+                       SYNTAX  INTEGER  
+                       ACCESS  read-only
+                       STATUS  mandatory
+                       ::= { sensorEntry 9 }
+
+
+END
