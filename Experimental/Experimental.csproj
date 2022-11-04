@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="cjsonWrapper">
+      <HintPath>..\packages\cjsonWrapper.dll</HintPath>
+    </Reference>
     <Reference Include="SnmpSharpNet, Version=0.9.6.0, Culture=neutral, PublicKeyToken=b2181aa3b9571feb, processorArchitecture=MSIL">
       <HintPath>..\packages\SnmpSharpNet.0.9.6\lib\SnmpSharpNet.dll</HintPath>
     </Reference>
@@ -56,4 +59,8 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(SolutionDir)packages\cjson.dll $(SolutionDir)Experimental\$(OutDir)cjson.dll
+copy $(SolutionDir)devicemapping.json $(SolutionDir)Experimental\$(OutDir)devicemapping.json</PostBuildEvent>
+  </PropertyGroup>
 </Project>
