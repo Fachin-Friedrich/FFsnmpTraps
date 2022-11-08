@@ -2,11 +2,11 @@
   {
     "MatchingCriteria": "manufacturer",
     "Key": "ASUSTeK COMPUTER INC.",
-    "Value": "ASUS_PETTrap.mib"
+    "Value": "C:\\Daten\\cs2\\FFsnmpTraps\\mib\\ASUS_PETTrap.mib"
   },
   {
     "MatchingCriteria": "manufacturer",
     "Key": "Intel Corporation.",
-    "Value": "BMC-MIB"
+    "Value": "C:\\Daten\\cs2\\FFsnmpTraps\\mib\\BMC-MIB.mib"
   }
 ]
