@@ -5,21 +5,25 @@ using SnmpSharpNet;
 using System.Diagnostics;
 using csJson;
 using System.Net;
+using System.IO;
 
 namespace Experimental
 {  
     class Program
     {
         static EventLog ELog;
+        static Dictionary<int, MIBRecord> MIBRecords = null;
 
-        static void WriteLogSimple( string txt)
+        static void WriteLogSimple( string txt, EventLogEntryType eventtype = EventLogEntryType.Information )
         {
+            var col0 = Console.ForegroundColor;
+            Console.ForegroundColor = eventtype == EventLogEntryType.Error ? ConsoleColor.Red : col0;
             Console.WriteLine($"[{DateTime.Now}] {txt}");
+            Console.ForegroundColor = col0;
+
             ELog.WriteEntry(
                 message: txt,
-                type: EventLogEntryType.Information,
-                eventID: -1,
-                category: -1
+                type: eventtype
             );
         }
 
@@ -111,7 +115,7 @@ namespace Experimental
                 WriteLogSimple(e.ToString());
             }
         }
-        
+       
         static void InitEventLog()
         {
             string logname = "FFTrapLog";
@@ -143,6 +147,76 @@ namespace Experimental
                 );
             }
 
+        }
+
+        static void InitMIBRecords()
+        {
+            // Currently We only support mib loading by manufacturer
+
+            var file = File.OpenRead("devicemapping.json");
+            var buffer = new byte[file.Length];
+            file.Read(buffer, 0, (int)file.Length);
+            file.Close();
+
+            string raw = System.Text.ASCIIEncoding.UTF8.GetString(buffer);
+            var json = jsonRoot.Parse(raw);
+            string man = MainboardInfo.Manufacturer;
+
+            var manufacturers = json["ByManufacturer"].Array;
+            for( ulong i = 0; i < manufacturers.Elements; ++i)
+            {
+                var obj = manufacturers[i].Object;
+                if( obj["Manufacturer"].String == man)
+                {
+                    string filepath = obj["File"].String;
+                    MIBRecords = MIBParserLite.Parse(filepath);
+                    WriteLogSimple($"{filepath} loaded.");
+                }
+            }
+
+            if( MIBRecords == null)
+            {
+                throw new Exception("Failed to match MIB-File for device");
+            }
+        }
+
+        static void BeginNetworkService()
+        {
+            var socket = new System.Net.Sockets.UdpClient(162);
+            while (true)
+            {
+                var ep = new IPEndPoint(IPAddress.Any, 162);
+                var buffer = socket.Receive(ref ep);
+
+                if (buffer.Length > 0)
+                {
+                    new Thread(() => HandleTrap(buffer, ep)).Start();
+                }
+                else
+                {
+                    WriteLogSimple("Zero length trap receieved");
+                }
+            }
+        }
+
+        static void Initialize()
+        {
+            try
+            {
+                InitEventLog();
+                InitMIBRecords();
+                BeginNetworkService();
+            }
+            catch( Exception e )
+            {
+                // Terminate Service here
+                WriteLogSimple(e.ToString(), EventLogEntryType.Error);
+            }
+        }
+
+        static void Main()
+        {
+            Initialize();
         }
 
         static void SelfIdentify()
@@ -181,7 +255,7 @@ namespace Experimental
                     var ep = new IPEndPoint(IPAddress.Any, 162);
                     var buffer = socket.Receive(ref ep);
 
-                    if( buffer.Length > 0)
+                    if (buffer.Length > 0)
                     {
                         new Thread(() => HandleTrap(buffer, ep)).Start();
                     }
@@ -191,7 +265,7 @@ namespace Experimental
                     }
 
                 }
-                catch( Exception e )
+                catch (Exception e)
                 {
                     WriteLogSimple(e.ToString());
                 }
