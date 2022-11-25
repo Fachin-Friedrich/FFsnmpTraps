@@ -13,14 +13,16 @@ namespace Experimental
         public readonly string TrapType;
         public readonly string Description;
         public readonly string[] Variables;
+        public readonly int Index;
 
-        internal MIBRecord( string idstr, string entp, string tt, string vraw, string desc )
+        internal MIBRecord( string idstr, string entp, string tt, string vraw, string desc, int ndx )
         {
             Id = int.Parse(idstr);
             Enterprise = entp;
             TrapType = tt;
             Variables = vraw.Split(',');
             Description = desc;
+            Index = ndx;
             for( int i = 0; i < Variables.Length; ++i)
             {
                 Variables[i] = Variables[i].Trim();
@@ -60,6 +62,7 @@ namespace Experimental
             }
 
             var result = new Dictionary<int, MIBRecord>();
+            int ndx = 0;
 
             while (true)
             {
@@ -101,7 +104,7 @@ namespace Experimental
                     var_raw = raw.Substring(var_pos1, var_pos2 - var_pos1);
                 }
 
-                var record = new MIBRecord(idmatch.Value, enterprise, traptype, var_raw, desc_match.Value);
+                var record = new MIBRecord(idmatch.Value, enterprise, traptype, var_raw, desc_match.Value, ++ndx);
                 result.Add(record.Id, record);
 
                 section_end = section_begin;

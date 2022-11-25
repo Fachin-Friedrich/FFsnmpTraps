@@ -81,6 +81,8 @@ namespace Experimental
 
         static void HandleTrap( byte[] raw, IPEndPoint ep )
         {
+            WriteLogSimple("Trap message recieved");
+            
             try
             {
                 int version = SnmpPacket.GetProtocolVersion(raw, raw.Length);
@@ -112,7 +114,7 @@ namespace Experimental
             }
             catch( Exception e)
             {
-                WriteLogSimple(e.ToString());
+                WriteLogSimple(e.ToString(), EventLogEntryType.Error);
             }
         }
        
@@ -128,11 +130,7 @@ namespace Experimental
                 ELog.Source = logname;
                 ELog.Log = logname;
 
-                ELog.WriteEntry(
-                    "Eventlog initialized",
-                    EventLogEntryType.Information,
-                    0
-                );
+                WriteLogSimple("Eventlog initialized.");
             }
             else
             {
@@ -140,11 +138,7 @@ namespace Experimental
                 ELog.Source = logname;
                 ELog.Log = logname;
 
-                ELog.WriteEntry(
-                    "FFTraps started",
-                    EventLogEntryType.Information,
-                    1
-                );
+                WriteLogSimple("FFTraps started.");
             }
 
         }
@@ -176,13 +170,14 @@ namespace Experimental
 
             if( MIBRecords == null)
             {
-                throw new Exception("Failed to match MIB-File for device");
+                throw new Exception($"Failed to match MIB-File for device for manufacturer \"{man}\"");
             }
         }
 
         static void BeginNetworkService()
         {
             var socket = new System.Net.Sockets.UdpClient(162);
+            WriteLogSimple("Listening on port 162");
             while (true)
             {
                 var ep = new IPEndPoint(IPAddress.Any, 162);
@@ -209,7 +204,7 @@ namespace Experimental
             }
             catch( Exception e )
             {
-                // Terminate Service here
+                // TODO Terminate Service here
                 WriteLogSimple(e.ToString(), EventLogEntryType.Error);
             }
         }
