@@ -57,9 +57,12 @@ namespace Experimental
         {
             var output = new System.Text.StringBuilder();
             string hostname = string.IsNullOrEmpty(host.HostName) ? string.Empty : $" ({host.HostName})";
+            var mib = MIBRecords[data.Specific];
 
             output.AppendLine($"SNMP v1");
-            output.AppendLine($"Generic: {data.Generic} - Specific: {data.Specific}");
+            output.AppendLine(mib.Description);
+            output.AppendLine($"Sensor {mib.TrapType}");
+            //output.AppendLine($"Generic: {data.Generic} - Specific: {data.Specific}");
             output.AppendLine($"Agent address: {host.AddressList[0]}{hostname}");
             output.AppendLine($"Message count: {data.VbList.Count}");
             output.AppendLine("---");
