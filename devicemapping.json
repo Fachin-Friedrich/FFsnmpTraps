@@ -2,11 +2,11 @@
     "ByManufacturer" : [
         {
             "Manufacturer": "ASUSTeK COMPUTER INC.",
-            "File": "C:\\Daten\\cs2\\FFsnmpTraps\\mib\\ASUS_PETTrap.mib"
+            "File": "mib\\ASUS_PETTrap.mib"
         },
         {
-            "Manufacturer": "Intel Corporation.",
-            "File": "C:\\Daten\\cs2\\FFsnmpTraps\\mib\\BMC-MIB.mib"
+            "Manufacturer": "Intel Corporation",
+            "File": "mib\\BMC-MIB.mib"
         }
     ]
 }

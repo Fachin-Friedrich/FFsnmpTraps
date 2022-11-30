@@ -32,7 +32,7 @@ namespace FFsnmpTrapService
 
         void WriteEvent(IPHostEntry host, SnmpV2Packet pkt, byte[] raw)
         {
-            string hostname = string.IsNullOrEmpty(host.HostName) ? string.Empty : $" ({host.HostName})";
+            string hostname = host == null || string.IsNullOrEmpty(host.HostName) ? string.Empty : $" ({host.HostName})";
             var output = new System.Text.StringBuilder();
 
             output.AppendLine("SNMP v2");
@@ -60,7 +60,7 @@ namespace FFsnmpTrapService
         void WriteEvent(IPHostEntry host, TrapPdu data, byte[] raw)
         {
             var output = new System.Text.StringBuilder();
-            string hostname = string.IsNullOrEmpty(host.HostName) ? string.Empty : $" ({host.HostName})";
+            string hostname = host == null || string.IsNullOrEmpty(host.HostName) ? string.Empty : $" ({host.HostName})";
             var mib = mib_records[data.Specific];
 
             output.AppendLine($"SNMP v1");
@@ -103,7 +103,10 @@ namespace FFsnmpTrapService
             try
             {
                 int version = SnmpPacket.GetProtocolVersion(raw, raw.Length);
-                var hostinfo = System.Net.Dns.GetHostEntry(ep.Address);
+                IPHostEntry hostinfo = null;
+                try { hostinfo = System.Net.Dns.GetHostEntry(ep.Address); }
+                catch { }
+
                 switch (version)
                 {
                     case (int)SnmpVersion.Ver1:
