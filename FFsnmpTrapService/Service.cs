@@ -20,8 +20,9 @@ namespace FFsnmpTrapService
 
         void WriteLogSimple(string txt, EventLogEntryType eventtype = EventLogEntryType.Information)
         {
+            elog.WriteEntry(message: txt, type: eventtype);
             logfile.WriteLine($"[{DateTime.Now}|{eventtype}] {txt}");
-            elog.WriteEntry( message: txt, type: eventtype );
+            logfile.Flush();
         }
 
         public Service()
@@ -45,7 +46,8 @@ namespace FFsnmpTrapService
             }
 
             string result = output.ToString();
-            Console.WriteLine($"[{DateTime.Now}] {result}");
+            logfile.Write($"[{DateTime.Now}]\r\n{result}\r\n---\r\n");
+            logfile.Flush();
             elog.WriteEntry(
                 message: result,
                 type: EventLogEntryType.Warning,
@@ -74,7 +76,8 @@ namespace FFsnmpTrapService
             }
 
             string result = output.ToString();
-            Console.WriteLine($"[{DateTime.Now}] {result}");
+            logfile.Write($"[{DateTime.Now}]\r\n{result}\r\n---\r\n");
+            logfile.Flush();
             elog.WriteEntry(
                 message: result,
                 type: EventLogEntryType.Warning,
@@ -89,9 +92,12 @@ namespace FFsnmpTrapService
         private UdpClient trap_listener;
         private EventLog elog;
         private Dictionary<int, MIBRecord> mib_records;
+        private bool graceful_stop;
+        private bool want_continue;
 
         void HandleTrap(byte[] raw, IPEndPoint ep)
         {
+            SetCulture();
             WriteLogSimple("Trap message recieved");
 
             try
@@ -137,6 +143,8 @@ namespace FFsnmpTrapService
             string logname = "logs\\" + DateTime.Now.ToString("ddd_dd_MMM_yyyy_HH_mm_ss") + ".log";
             Directory.CreateDirectory("logs");
             logfile = new StreamWriter(logname, append: true);
+            graceful_stop = true;
+            want_continue = true;
 
             logname = "FFTrapLog";
             if (!EventLog.Exists(logname))
@@ -185,7 +193,7 @@ namespace FFsnmpTrapService
                 }
 
                 trap_listener = new UdpClient(162);
-                while (trap_listener != null)
+                while (want_continue)
                 {
                     var ep = new IPEndPoint(IPAddress.Any, 162);
                     buffer = trap_listener.Receive(ref ep);
@@ -202,7 +210,12 @@ namespace FFsnmpTrapService
             }
             catch( Exception e)
             {
-                WriteLogSimple(e.ToString(), EventLogEntryType.Error);
+                if (want_continue)
+                {
+                    WriteLogSimple(e.ToString(), EventLogEntryType.Error);
+                    graceful_stop = false;
+                    Stop();
+                }
             }
 
         }
@@ -215,10 +228,26 @@ namespace FFsnmpTrapService
 
         protected override void OnStop()
         {
-            var t = trap_listener;
-            trap_listener = null;
-            t.Close();
-            main_thread.Abort();
+            SetCulture();
+
+            try
+            {
+                want_continue = false;
+                if (graceful_stop)
+                {
+                    trap_listener.Close();
+                    main_thread.Join();
+                    WriteLogSimple("Service has stopped");
+                }
+                else
+                {
+                    WriteLogSimple("Service stopped abnormally", EventLogEntryType.Error);
+                }
+            }
+            catch( Exception e)
+            {
+                WriteLogSimple(e.ToString(), EventLogEntryType.Error);
+            }
         }
 
         protected override void OnShutdown()

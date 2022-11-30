@@ -81,7 +81,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy $(SolutionDir)packages\cjson.dll $(SolutionDir)Experimental\$(OutDir)cjson.dll
-copy $(SolutionDir)devicemapping.json $(SolutionDir)Experimental\$(OutDir)devicemapping.json</PostBuildEvent>
+    <PostBuildEvent>copy $(SolutionDir)packages\cjson.dll $(SolutionDir)FFsnmpTrapService\$(OutDir)cjson.dll
+copy $(SolutionDir)devicemapping.json $(SolutionDir)FFsnmpTrapService\$(OutDir)devicemapping.json</PostBuildEvent>
   </PropertyGroup>
 </Project>
