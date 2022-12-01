@@ -30,13 +30,12 @@ namespace FFsnmpTrapService
             InitializeComponent();
         }
 
-        void WriteEvent(IPHostEntry host, SnmpV2Packet pkt, byte[] raw)
+        void WriteEvent(string hostname, SnmpV2Packet pkt, byte[] raw)
         {
-            string hostname = host == null || string.IsNullOrEmpty(host.HostName) ? string.Empty : $" ({host.HostName})";
             var output = new System.Text.StringBuilder();
 
             output.AppendLine("SNMP v2");
-            output.AppendLine($"Agent address: {host.AddressList[0]}{hostname}");
+            output.AppendLine($"Agent address: {hostname}");
             output.AppendLine($"Community: {pkt.Community}");
             output.AppendLine($"Message count: {pkt.Pdu.VbList.Count}");
             output.AppendLine("---");
@@ -51,23 +50,46 @@ namespace FFsnmpTrapService
             elog.WriteEntry(
                 message: result,
                 type: EventLogEntryType.Warning,
-                eventID: pkt.Pdu.ErrorIndex,
+                eventID: pkt.Pdu.ErrorIndex % 0xFFFF,
                 category: (short)pkt.Pdu.ErrorStatus,
                 rawData: raw
             );
         }
 
-        void WriteEvent(IPHostEntry host, TrapPdu data, byte[] raw)
+        private static string GetHostName( IPEndPoint ep )
+        {
+            try
+            {
+                try
+                {
+                    string name = System.Net.Dns.GetHostEntry(ep.Address).HostName;
+                    return $"{ep.Address} ({name})";
+                }
+                catch( Exception e )
+                {
+                    return ep.Address.ToString();
+                }
+            }
+            catch( Exception e )
+            {
+                return "Unkown";
+            }
+        }
+
+        void WriteEvent(string hostname, TrapPdu data, byte[] raw)
         {
             var output = new System.Text.StringBuilder();
-            string hostname = host == null || string.IsNullOrEmpty(host.HostName) ? string.Empty : $" ({host.HostName})";
-            var mib = mib_records[data.Specific];
-
             output.AppendLine($"SNMP v1");
-            output.AppendLine(mib.Description);
-            output.AppendLine($"Sensor {mib.TrapType}");
+
+            if (mib_records.ContainsKey(data.Specific))
+            {
+                var mib = mib_records[data.Specific];
+                output.AppendLine(mib.Description);
+                output.AppendLine($"Sensor {mib.TrapType}");
+            }
+
             //output.AppendLine($"Generic: {data.Generic} - Specific: {data.Specific}");
-            output.AppendLine($"Agent address: {host.AddressList[0]}{hostname}");
+            output.AppendLine($"Agent address: {hostname}");
             output.AppendLine($"Message count: {data.VbList.Count}");
             output.AppendLine("---");
             foreach (var v in data.VbList)
@@ -81,7 +103,7 @@ namespace FFsnmpTrapService
             elog.WriteEntry(
                 message: result,
                 type: EventLogEntryType.Warning,
-                eventID: data.Specific,
+                eventID: data.Specific % 0xFFFF,
                 category: (short)data.Generic,
                 rawData: raw
             );
@@ -103,9 +125,7 @@ namespace FFsnmpTrapService
             try
             {
                 int version = SnmpPacket.GetProtocolVersion(raw, raw.Length);
-                IPHostEntry hostinfo = null;
-                try { hostinfo = System.Net.Dns.GetHostEntry(ep.Address); }
-                catch { }
+                string hostname = GetHostName(ep);
 
                 switch (version)
                 {
@@ -113,7 +133,7 @@ namespace FFsnmpTrapService
 
                         var pkt1 = new SnmpV1TrapPacket();
                         pkt1.decode(raw, raw.Length);
-                        WriteEvent(hostinfo, pkt1.TrapPdu, raw);
+                        WriteEvent(hostname, pkt1.TrapPdu, raw);
                         break;
 
                     case (int)SnmpVersion.Ver2:
@@ -125,7 +145,7 @@ namespace FFsnmpTrapService
                             throw new Exception("Captured corrupted SNMP V2 Package");
                         }
 
-                        WriteEvent(hostinfo, pkt2, raw);
+                        WriteEvent(hostname, pkt2, raw);
                         break;
 
                     default:
@@ -149,21 +169,24 @@ namespace FFsnmpTrapService
             graceful_stop = true;
             want_continue = true;
 
-            logname = "FFTrapLog";
-            if (!EventLog.Exists(logname))
+            try
             {
-                EventLog.CreateEventSource(logname, logname);
+                if( !EventLog.SourceExists("FFTraps"))
+                {
+                    EventLog.CreateEventSource("FFTraps", "Application");
+                }
                 elog = new EventLog();
-                elog.Source = logname;
-                elog.Log = logname;
-                WriteLogSimple("Eventlog initialized.");
-            }
-            else
-            {
-                elog = new EventLog();
-                elog.Source = logname;
-                elog.Log = logname;
+                elog.Log = "Application";
+                elog.Source = "FFTraps";
                 WriteLogSimple("FFTraps started.");
+            }
+            catch( Exception e)
+            {
+                logfile.WriteLine($"[{DateTime.Now}|Fatal] {e}\r\n----------");
+                logfile.Flush();
+                want_continue = false;
+                graceful_stop = false;
+                Stop();
             }
 
             try
@@ -178,6 +201,7 @@ namespace FFsnmpTrapService
                 var json = jsonRoot.Parse(raw);
                 string man = MainboardInfo.Manufacturer;
 
+                mib_records = null;
                 var manufacturers = json["ByManufacturer"].Array;
                 for (ulong i = 0; i < manufacturers.Elements; ++i)
                 {
